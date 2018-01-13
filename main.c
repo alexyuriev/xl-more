@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
 
                 } else {
 
-                    XL_LOCK_SCREEN_IGNORE ( pixelColorLockedIgnore );
+                    XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
                     current_offset = 0;
                     remember_keys  = 0;
 
