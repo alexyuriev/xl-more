@@ -21,18 +21,15 @@ When xl-more runs, it turns off a mouse cursor, intercepts a keyboard and a mous
 
 ##### Lock-and-Store mode
 
-This mode is indicated by the change of the screen color to the color defined in `XL-more.color.store` Xresource. If the resource `XL-more.color.store` is not defined, xl-more will use blue screen. In this mode, xl-more will remember the key presses until the user hits `[Enter]`. After xl-more receives the `[Enter]` key in Lock-and-store mode, it will attempt to validate the entered password using PAM. If the validation is successful, xl-more will unlock the system, restore content of the screen and terminate. Otherwise it will switch to Lock-And-Ignore mode.
+This mode is indicated by the change of the screen color to the color defined in the `XL-more.color.store` Xresource. If the resource `XL-more.color.store` is not defined, xl-more will use blue screen. In this mode, xl-more will remember the key presses until the user hits the `[Enter]` again. After xl-more receives the `[Enter]` key in Lock-and-Store mode, it will attempt to validate the entered password using PAM. If the validation is successful, xl-more will unlock the system, restore the content of the screen and terminate. Otherwise, xl-more will switch to Lock-And-Ignore mode.
 
-xl-more will identify itself to Linux PAM subsystem based on the string of the `XL-more.pam_service` resource. If this resource is not defined, it will check PAM_SERVICE environment variable and use the name defined in it. xl-more will not lock the screen if neither `XL-more.pam_service` Xresource nor PAM_SERVICE environment variable are defined. It is recommended that the PAM name matches the name of the service used by a user to login into X. Since I use LightDM, I define it as lightdm.
+xl-more identifies itself to Linux PAM subsystem based on the string of the `XL-more.pam_service` Xresource. resource. If this resource is not defined, x-more checks `PAM_SERVICE` environment variable and uses the string defined in it as the service name. xl-more will not lock the screen if neither `XL-more.pam_service` Xresource nor `PAM_SERVICE` environment variable is defined. It is recommended that the service name for PAM matches the name of the service used by a user to login into X. Since I use LightDM, I define the service name as `lightdm`.
 
-xl-more will log locking of the screen and both successful and unsuccessful attempts to unlock the screen to syslog.
+xl-more logs locking of the screen and both successful and unsuccessful attempts to unlock the screen to syslog.
 
 ```
 alex@wrks-2:~/zubrcom/xl$ PAM_SERVICE=lightdm xl
 ```
-
-Both successful and unsuccessful attempts to unlock the screen are logged into
-syslog.
 
 The following is the Xresource section that I use.
 
