@@ -29,6 +29,7 @@ xl-more logs locking of the screen and both successful and unsuccessful attempts
 
 ```
 alex@wrks-2:~/zubrcom/xl$ PAM_SERVICE=lightdm xl-more
+```
 
 The following is the Xresource section that I use.
 
