@@ -11,14 +11,15 @@ Unlike his xl, xl-more:
 3. Only validates the unlock password using PAM.
 4. Customizable via Xresources.
 
+### Functionality
 
-#### Functionality
+XL-more lock has two distinct modes that are described below:
 
-Lock-and-Ignore mode
+##### Lock-and-Ignore mode
 
 When xl-more runs, it turns off mouse cursor, intercepts keyboard and mouse, and creates a window covering the entire screen ( including multiple monitors ) with the color defined in `XL-more.color.ignore` Xresource. If the color is not defined, xl-more will use black color. All key pressed are ignored until a user at the keyboard hits the enter `[Enter]` key, switching the xl-more into the Lock-and-store mode.
 
-Lock-and-Store mode
+##### Lock-and-Store mode
 
 This mode is indicated by the change of the screen color to the color defined in `XL-more.color.store` Xresource. If the resource `XL-more.color.store` is not defined, xl-more will use blue screen. In this mode, xl-more will remember the key presses until the user hits `[Enter]`. After xl-more receives the `[Enter]` key in Lock-and-store mode, it will attempt to validate the entered password using PAM. If the validation is successful, xl-more will unlock the system, restore content of the screen and terminate. Otherwise it will switch to Lock-And-Ignore mode.
 
