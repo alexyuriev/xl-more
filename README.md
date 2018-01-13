@@ -17,7 +17,7 @@ XL-more lock has two distinct modes that are described below:
 
 ##### Lock-and-Ignore mode
 
-When xl-more runs, it turns off mouse cursor, intercepts keyboard and mouse, and creates a window covering the entire screen ( including multiple monitors ) with the color defined in `XL-more.color.ignore` Xresource. If the color is not defined, xl-more will use black color. All key pressed are ignored until a user at the keyboard hits the enter `[Enter]` key, switching the xl-more into the Lock-and-store mode.
+When xl-more runs, it turns off a mouse cursor, intercepts a keyboard and a mouse input events, and creates a window covering the entire screen possibly spanning multiple monitors with the color defined in the `XL-more.color.ignore` Xresource. If the color is not defined, xl-more will use black color. All key pressed are ignored until a user at the keyboard hits the`[Enter]` key, switching the xl-more into the Lock-and-Store mode.
 
 ##### Lock-and-Store mode
 
