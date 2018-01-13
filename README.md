@@ -27,7 +27,7 @@ xl-more will identify itself to Linux PAM subsystem based on the string of the `
 xl-more will log locking of the screen and both successful and unsuccessful attempts to unlock the screen to syslog.
 
 ```
-alex@wrks-2:~/zubrcom/xl$ XLSERVICE=lightdm xl
+alex@wrks-2:~/zubrcom/xl$ PAM_SERVICE=lightdm xl
 ```
 
 Both successful and unsuccessful attempts to unlock the screen are logged into
