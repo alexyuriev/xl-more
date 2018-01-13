@@ -69,11 +69,11 @@ static int pam_converse(int n, const struct pam_message **msg, struct pam_respon
     unsigned i;
 
     if (n <= 0 || n > PAM_MAX_NUM_MSG) {
-    	syslog(LOG_ERR, "Internal PAM error: num_msg <= 0 or great than %d", PAM_MAX_NUM_MSG);
+        syslog(LOG_ERR, "Internal PAM error: num_msg <= 0 or great than %d", PAM_MAX_NUM_MSG);
         return (PAM_CONV_ERR);
     }
     if ((responses = calloc(n, sizeof *responses)) == NULL) {
-    	syslog(LOG_ERR, "Internal PAM error: out of memory");
+        syslog(LOG_ERR, "Internal PAM error: out of memory");
         return (PAM_BUF_ERR);
     }
     for (i = 0; i < n; ++i) {
@@ -81,22 +81,21 @@ static int pam_converse(int n, const struct pam_message **msg, struct pam_respon
         responses[i].resp = NULL;
         char *m_style = NULL;
         switch (msg[i]->msg_style) {
-	        case PAM_PROMPT_ECHO_OFF: m_style = "PAM_PROMPT_ECHO_OFF"; break;
-	        case PAM_PROMPT_ECHO_ON:  m_style = "PAM_PROMPT_ECHO_ON";  break;
-	        case PAM_ERROR_MSG:       m_style = "PAM_ERROR_MSG";       break;
-	        case PAM_TEXT_INFO:       m_style = "PAM_TEXT_INFO";       break;
-	        default: syslog(LOG_ERR, "Internal PAM error: uknown message type %d", msg[i]->msg_style);
-	        	     goto fail;
+            case PAM_PROMPT_ECHO_OFF: m_style = "PAM_PROMPT_ECHO_OFF"; break;
+            case PAM_PROMPT_ECHO_ON:  m_style = "PAM_PROMPT_ECHO_ON";  break;
+            case PAM_ERROR_MSG:       m_style = "PAM_ERROR_MSG";       break;
+            case PAM_TEXT_INFO:       m_style = "PAM_TEXT_INFO";       break;
+            default: syslog(LOG_ERR, "Internal PAM error: uknown message type %d", msg[i]->msg_style);
+                     goto fail;
         }
 
         switch (msg[i]->msg_style) {
-        	case PAM_PROMPT_ECHO_OFF:
-        			if ((responses[i].resp = strdup(password)) == NULL) {
-        				goto fail;
-        			}
-        			break;
-        	default: syslog(LOG_ERR, "Internal error: message style %s not implemented", m_style);
-        	         goto fail;
+            case PAM_PROMPT_ECHO_OFF:   if ((responses[i].resp = strdup(password)) == NULL) {
+                                            goto fail;
+                                        }
+                                        break;
+            default: syslog(LOG_ERR, "Internal error: message style %s not implemented", m_style);
+                     goto fail;
         }
     }
     *resp = responses;
