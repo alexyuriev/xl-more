@@ -336,13 +336,12 @@ int main(int argc, char *argv[])
                     XL_LOCK_SCREEN_COLOR( pixelColorLockedStore );
 
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
-                    current_offset = 0;
                     remember_keys = 1;
+                    current_offset = 0;
 
                 } else {
 
                     XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
-                    current_offset = 0;
                     remember_keys  = 0;
 
                     if ( current_offset && !authenticate_using_pam(service_name, user_name, passwd_buffer) ) {
@@ -358,7 +357,7 @@ int main(int argc, char *argv[])
                         exit(0);
 
                     }
-
+                    current_offset = 0;
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
                 }
@@ -368,11 +367,12 @@ int main(int argc, char *argv[])
                     // This password is too long so pretend that it failed and reset
 
                     XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
+                    remember_keys = 0;
+                    current_offset = 0;
+
 
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
-                    current_offset = 0;
-                    remember_keys = 0;
                 } else {
                     if ( remember_keys ) {
                         /* Not only key pressed, but we are in a record keypress to assemble password mode */
