@@ -61,6 +61,12 @@
     else                                                  \
         DST = NULL;
 
+#define XL_LOCK_SCREEN_COLOR(NAME)                                \
+    syslog(LOG_ERR, "DEBUG: screen lock color set to %lu", NAME); \
+    XSetWindowBackground( display, w, NAME );                     \
+    XUnmapWindow( display, w);                                    \
+    XMapWindow( display, w);
+
 
 static int pam_converse(int n, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
@@ -300,7 +306,10 @@ int main(int argc, char *argv[])
     xwWindowSetAttr.override_redirect = True;
 
     XChangeWindowAttributes( display, w, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr );
-    XMapWindow( display, w);
+
+//    XMapWindow( display, w);
+
+    XL_LOCK_SCREEN_COLOR(pixelColorLockedIgnore);
 
     XGrabPointer(display, root, 1, ButtonPress, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XGrabKeyboard(display, root, 0, GrabModeAsync, GrabModeAsync, CurrentTime);
@@ -322,43 +331,43 @@ int main(int argc, char *argv[])
             int i = XLookupString(&ev.xkey, input_buffer, 10, &keysym, &compose);
             if ( keysym == XK_Return ) {
                 if ( !remember_keys ) {
-                    // indicate state by changing the window color
-                    XSetWindowBackground( display, w, pixelColorLockedStore );
-                    XUnmapWindow( display, w);
-                    XMapWindow( display, w);
+                    // start recording key presses
 
-                    // start storing key passwords
+                    XL_LOCK_SCREEN_COLOR( pixelColorLockedStore );
+
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     current_offset = 0;
                     remember_keys = 1;
+
                 } else {
+
+                    XL_LOCK_SCREEN_IGNORE ( pixelColorLockedIgnore );
+                    current_offset = 0;
+                    remember_keys  = 0;
+
                     if ( current_offset && !authenticate_using_pam(service_name, user_name, passwd_buffer) ) {
-                        /* success - password correct */
+                        // success - password correct
+
+                        memset(passwd_buffer, 0x00, MAX_PASSWORD_LEN);
+
+                        syslog(LOG_INFO, "User `%s` unlocked X screen", user_name);
+
                         XUngrabKeyboard(display, CurrentTime);
                         XUngrabPointer(display, CurrentTime);
-                        memset(passwd_buffer, 0x00, MAX_PASSWORD_LEN);
-                        syslog(LOG_INFO, "User `%s` unlocked X screen", user_name);
-                        exit(0);
-                    } else {
-                        // incorrect password
-                        XSetWindowBackground( display, w, pixelColorLockedIgnore );
-                        XUnmapWindow( display, w);
-                        XMapWindow( display, w);
 
-                        // reset
-                        memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
-                        syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
-                        current_offset = 0;
-                        remember_keys = 0;
+                        exit(0);
+
                     }
 
+                    memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
+                    syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
                 }
             } else {
+
                 if ( current_offset + i > MAX_PASSWORD_LEN - 1 ) {
                     // This password is too long so pretend that it failed and reset
-                    XSetWindowBackground( display, w, pixelColorLockedIgnore );
-                    XUnmapWindow( display, w);
-                    XMapWindow( display, w);
+
+                    XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
 
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
