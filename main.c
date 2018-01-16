@@ -294,26 +294,26 @@ int main(int argc, char *argv[])
     syslog(LOG_INFO, "User `%s` locked X screen", user_name);
 
     static char noData[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    Pixmap emptyBitMap = XCreateBitmapFromData( display, w, noData, 8, 8);
+    Pixmap emptyBitMap_ignore = XCreateBitmapFromData( display, w,       noData, 8, 8);
+    Pixmap emptyBitMap_store  = XCreateBitmapFromData( display, w_store, noData, 8, 8);
 
-    Cursor invisibleCursor = XCreatePixmapCursor( display, emptyBitMap, emptyBitMap, &colorLockedIgnore, &colorLockedIgnore, 0, 0);
-    XDefineCursor( display, w, invisibleCursor );
-    XFreeCursor( display, invisibleCursor );
-    XFreePixmap( display, emptyBitMap );
+    Cursor invisibleCursor_ignore = XCreatePixmapCursor( display, emptyBitMap_ignore, emptyBitMap_ignore, &colorLockedIgnore, &colorLockedIgnore, 0, 0);
+    Cursor invisibleCursor_store  = XCreatePixmapCursor( display, emptyBitMap_store,  emptyBitMap_store,  &colorLockedStore,  &colorLockedStore,  0, 0);
+    XDefineCursor( display, w,       invisibleCursor_ignore );
+    XDefineCursor( display, w_store, invisibleCursor_store  );
+    XFreeCursor( display, invisibleCursor_ignore );
+    XFreeCursor( display, invisibleCursor_store  );
+    XFreePixmap( display, emptyBitMap_ignore );
+    XFreePixmap( display, emptyBitMap_store  );
 
     /* Attributes for the locked window */
 
-    XSetWindowAttributes xwWindowSetAttr;
-    xwWindowSetAttr.save_under        = True;
-    xwWindowSetAttr.override_redirect = True;
+    XSetWindowAttributes xwWindowSetAttr, xwWindowSetAttr_store;
+    xwWindowSetAttr.save_under        = xwWindowSetAttr_store.save_under        = True;
+    xwWindowSetAttr.override_redirect = xwWindowSetAttr_store.override_redirect = True;
 
-    XChangeWindowAttributes( display, w, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr );
-
-    XSetWindowAttributes xwWindowSetAttr_store;
-    xwWindowSetAttr_store.save_under        = True;
-    xwWindowSetAttr_store.override_redirect = True;
-
-    XChangeWindowAttributes( display, w_store, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr_store);
+    XChangeWindowAttributes( display, w,       CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr       );
+    XChangeWindowAttributes( display, w_store, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr_store );
 
     XMapWindow( display, w);
 
