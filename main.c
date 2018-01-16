@@ -63,9 +63,10 @@
 
 #define XL_LOCK_SCREEN_COLOR(NAME)                                \
     syslog(LOG_ERR, "DEBUG: screen lock color set to %lu", NAME); \
-    XSetWindowBackground( display, w, NAME );                     \
     XUnmapWindow( display, w);                                    \
-    XMapWindow( display, w);
+    XSetWindowBackground( display, w, NAME );                     \
+    XMapWindow( display, w);                                      \
+    XFlush( display );
 
 
 static int pam_converse(int n, const struct pam_message **msg, struct pam_response **resp, void *data)
@@ -286,7 +287,8 @@ int main(int argc, char *argv[])
     XWindowAttributes xwRootWinAttr;
     XGetWindowAttributes( display, root, &xwRootWinAttr );
 
-    Window w = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedIgnore );
+    Window w       = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedIgnore );
+    Window w_store = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedStore );
 
     openlog("XL-more", LOG_PID, LOG_AUTHPRIV);
     syslog(LOG_INFO, "User `%s` locked X screen", user_name);
@@ -307,9 +309,17 @@ int main(int argc, char *argv[])
 
     XChangeWindowAttributes( display, w, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr );
 
-//    XMapWindow( display, w);
+    XSetWindowAttributes xwWindowSetAttr_store;
+    xwWindowSetAttr_store.save_under        = True;
+    xwWindowSetAttr_store.override_redirect = True;
 
-    XL_LOCK_SCREEN_COLOR(pixelColorLockedIgnore);
+    XChangeWindowAttributes( display, w_store, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr_store);
+
+    XMapWindow( display, w);
+
+//    XL_LOCK_SCREEN_COLOR(pixelColorLockedIgnore);
+
+//    XMapWindow( display, w_store );
 
     XGrabPointer(display, root, 1, ButtonPress, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XGrabKeyboard(display, root, 0, GrabModeAsync, GrabModeAsync, CurrentTime);
@@ -333,7 +343,9 @@ int main(int argc, char *argv[])
                 if ( !remember_keys ) {
                     // start recording key presses
 
-                    XL_LOCK_SCREEN_COLOR( pixelColorLockedStore );
+                    // XL_LOCK_SCREEN_COLOR( pixelColorLockedStore );
+
+                    XMapWindow( display, w_store );
 
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     remember_keys = 1;
@@ -341,6 +353,7 @@ int main(int argc, char *argv[])
 
                 } else {
 
+                    XUnmapWindow ( display, w_store );
                     XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
                     remember_keys  = 0;
 
@@ -366,7 +379,9 @@ int main(int argc, char *argv[])
                 if ( current_offset + i > MAX_PASSWORD_LEN - 1 ) {
                     // This password is too long so pretend that it failed and reset
 
+                    XUnmapWindow( display, w_store );
                     XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
+
                     remember_keys = 0;
                     current_offset = 0;
 
