@@ -1,5 +1,5 @@
 /*
- *  XL-more version 1.00
+ *  XL-more version 1.01
  *
  *  github.com/alexyuriev/xl-more
  *
@@ -60,6 +60,12 @@
         DST = ret.addr;                                   \
     else                                                  \
         DST = NULL;
+
+#define XL_LOCK_SCREEN_COLOR(NAME)                                \
+    XUnmapWindow( display, w);                                    \
+    XSetWindowBackground( display, w, NAME );                     \
+    XMapWindow( display, w);                                      \
+    XFlush( display );
 
 
 static int pam_converse(int n, const struct pam_message **msg, struct pam_response **resp, void *data)
@@ -280,26 +286,34 @@ int main(int argc, char *argv[])
     XWindowAttributes xwRootWinAttr;
     XGetWindowAttributes( display, root, &xwRootWinAttr );
 
-    Window w = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedIgnore );
+    Window w       = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedIgnore );
+    Window w_store = XCreateSimpleWindow( display, root, 0, 0, xwRootWinAttr.width, xwRootWinAttr.height, 0, 0, pixelColorLockedStore );
 
     openlog("XL-more", LOG_PID, LOG_AUTHPRIV);
     syslog(LOG_INFO, "User `%s` locked X screen", user_name);
 
     static char noData[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    Pixmap emptyBitMap = XCreateBitmapFromData( display, w, noData, 8, 8);
+    Pixmap emptyBitMap_ignore = XCreateBitmapFromData( display, w,       noData, 8, 8);
+    Pixmap emptyBitMap_store  = XCreateBitmapFromData( display, w_store, noData, 8, 8);
 
-    Cursor invisibleCursor = XCreatePixmapCursor( display, emptyBitMap, emptyBitMap, &colorLockedIgnore, &colorLockedIgnore, 0, 0);
-    XDefineCursor( display, w, invisibleCursor );
-    XFreeCursor( display, invisibleCursor );
-    XFreePixmap( display, emptyBitMap );
+    Cursor invisibleCursor_ignore = XCreatePixmapCursor( display, emptyBitMap_ignore, emptyBitMap_ignore, &colorLockedIgnore, &colorLockedIgnore, 0, 0);
+    Cursor invisibleCursor_store  = XCreatePixmapCursor( display, emptyBitMap_store,  emptyBitMap_store,  &colorLockedStore,  &colorLockedStore,  0, 0);
+    XDefineCursor( display, w,       invisibleCursor_ignore );
+    XDefineCursor( display, w_store, invisibleCursor_store  );
+    XFreeCursor( display, invisibleCursor_ignore );
+    XFreeCursor( display, invisibleCursor_store  );
+    XFreePixmap( display, emptyBitMap_ignore );
+    XFreePixmap( display, emptyBitMap_store  );
 
     /* Attributes for the locked window */
 
-    XSetWindowAttributes xwWindowSetAttr;
-    xwWindowSetAttr.save_under        = True;
-    xwWindowSetAttr.override_redirect = True;
+    XSetWindowAttributes xwWindowSetAttr, xwWindowSetAttr_store;
+    xwWindowSetAttr.save_under        = xwWindowSetAttr_store.save_under        = True;
+    xwWindowSetAttr.override_redirect = xwWindowSetAttr_store.override_redirect = True;
 
-    XChangeWindowAttributes( display, w, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr );
+    XChangeWindowAttributes( display, w,       CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr       );
+    XChangeWindowAttributes( display, w_store, CWOverrideRedirect | CWSaveUnder, &xwWindowSetAttr_store );
+
     XMapWindow( display, w);
 
     XGrabPointer(display, root, 1, ButtonPress, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
@@ -322,48 +336,51 @@ int main(int argc, char *argv[])
             int i = XLookupString(&ev.xkey, input_buffer, 10, &keysym, &compose);
             if ( keysym == XK_Return ) {
                 if ( !remember_keys ) {
-                    // indicate state by changing the window color
-                    XSetWindowBackground( display, w, pixelColorLockedStore );
-                    XUnmapWindow( display, w);
-                    XMapWindow( display, w);
+                    // start recording key presses
 
-                    // start storing key passwords
+                    XMapWindow( display, w_store );
+
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
-                    current_offset = 0;
                     remember_keys = 1;
+                    current_offset = 0;
+
                 } else {
+
+                    XUnmapWindow ( display, w_store );
+                    XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
+                    remember_keys  = 0;
+
                     if ( current_offset && !authenticate_using_pam(service_name, user_name, passwd_buffer) ) {
-                        /* success - password correct */
+                        // success - password correct
+
+                        memset(passwd_buffer, 0x00, MAX_PASSWORD_LEN);
+
+                        syslog(LOG_INFO, "User `%s` unlocked X screen", user_name);
+
                         XUngrabKeyboard(display, CurrentTime);
                         XUngrabPointer(display, CurrentTime);
-                        memset(passwd_buffer, 0x00, MAX_PASSWORD_LEN);
-                        syslog(LOG_INFO, "User `%s` unlocked X screen", user_name);
+
                         exit(0);
-                    } else {
-                        // incorrect password
-                        XSetWindowBackground( display, w, pixelColorLockedIgnore );
-                        XUnmapWindow( display, w);
-                        XMapWindow( display, w);
 
-                        // reset
-                        memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
-                        syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
-                        current_offset = 0;
-                        remember_keys = 0;
                     }
-
+                    current_offset = 0;
+                    memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
+                    syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
                 }
             } else {
+
                 if ( current_offset + i > MAX_PASSWORD_LEN - 1 ) {
                     // This password is too long so pretend that it failed and reset
-                    XSetWindowBackground( display, w, pixelColorLockedIgnore );
-                    XUnmapWindow( display, w);
-                    XMapWindow( display, w);
+
+                    XUnmapWindow( display, w_store );
+                    XL_LOCK_SCREEN_COLOR( pixelColorLockedIgnore );
+
+                    remember_keys = 0;
+                    current_offset = 0;
+
 
                     memset( passwd_buffer, 0x00, MAX_PASSWORD_LEN );
                     syslog( LOG_ERR, "User `%s` failed to unlocked X screen", user_name );
-                    current_offset = 0;
-                    remember_keys = 0;
                 } else {
                     if ( remember_keys ) {
                         /* Not only key pressed, but we are in a record keypress to assemble password mode */
