@@ -1,5 +1,5 @@
 /*
- *  XL-more version 1.00
+ *  XL-more version 1.01
  *
  *  github.com/alexyuriev/xl-more
  *
@@ -62,7 +62,6 @@
         DST = NULL;
 
 #define XL_LOCK_SCREEN_COLOR(NAME)                                \
-    syslog(LOG_ERR, "DEBUG: screen lock color set to %lu", NAME); \
     XUnmapWindow( display, w);                                    \
     XSetWindowBackground( display, w, NAME );                     \
     XMapWindow( display, w);                                      \
@@ -317,10 +316,6 @@ int main(int argc, char *argv[])
 
     XMapWindow( display, w);
 
-//    XL_LOCK_SCREEN_COLOR(pixelColorLockedIgnore);
-
-//    XMapWindow( display, w_store );
-
     XGrabPointer(display, root, 1, ButtonPress, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
     XGrabKeyboard(display, root, 0, GrabModeAsync, GrabModeAsync, CurrentTime);
     XSelectInput(display, root, KeyPressMask);
@@ -342,8 +337,6 @@ int main(int argc, char *argv[])
             if ( keysym == XK_Return ) {
                 if ( !remember_keys ) {
                     // start recording key presses
-
-                    // XL_LOCK_SCREEN_COLOR( pixelColorLockedStore );
 
                     XMapWindow( display, w_store );
 
